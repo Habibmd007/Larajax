@@ -79,6 +79,11 @@
 </div>
 
 <script>
+
+    Echo.channel('user.created')
+    .listen('UserCreatedListener', (e) => {
+        console.log(e.user);
+    });
 </script>
 
 

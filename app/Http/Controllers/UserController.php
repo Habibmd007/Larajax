@@ -8,6 +8,7 @@ use App\Mail\Mailverification;
 use Illuminate\Support\Carbon;
 use Mail;
 use Illuminate\Support\Facades\Auth;
+use App\Notifications\MailNotify;
 
 class UserController extends Controller
 {
@@ -41,10 +42,10 @@ class UserController extends Controller
     {
         $this->validate($request,[
             'firstname'     => 'required',
-            'lastname'     => 'required',
-            'email' => 'required',
-            'password' => 'required',
-            'image' => 'required|mimes:png,jpg,jpeg,svg,bmp,ico|max:1024',
+            'lastname'      => 'required',
+            'email'         => 'required|unique:users',
+            'password'      => 'required',
+            'image'         => 'required|mimes:png,jpg,jpeg,svg,bmp,ico|max:1024',
         ]);
 
         $image = $request->file('image');
@@ -72,7 +73,11 @@ class UserController extends Controller
         $user->email_verification_token = str_random(32);
         $user->save();
 
-        Mail::to($user->email)->send(new Mailverification($user));
+        // mail commented coz using notification
+        // Mail::to($user->email)->queue(new Mailverification($user));
+        // Mail::to($user->email)->send(new Mailverification($user));
+
+        // $user->notify(new MailNotify($user));
         return redirect('user/create')->with('msg', 'Verify your email to  active your account');
 
     }
@@ -162,6 +167,9 @@ class UserController extends Controller
         $credentials = $request->except('_token');
         if(auth()->attempt($credentials)) {
             $user = auth()->user();
+            $user->last_login = Carbon::now();
+            $user->save();
+
             if ($user->email_verified == 0) {
                 auth()->logout();
 
